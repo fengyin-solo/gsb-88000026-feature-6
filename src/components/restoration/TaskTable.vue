@@ -1,35 +1,62 @@
 <script setup>
 import { riskMeta } from '../../utils/restorationFormatters'
+import {
+  formatCompleteness,
+  taskRiskScore,
+} from '../../utils/taskRiskOrdering'
 
-defineProps({
+const props = defineProps({
   rows: {
     type: Array,
     required: true,
   },
+  factors: {
+    type: Object,
+    required: true,
+  },
 })
+
+function formatWaitDays(value) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? `${value} 天`
+    : '—'
+}
 </script>
 
 <template>
   <div class="task-table">
     <div class="task-row task-head">
+      <span>风险序</span>
       <span>对象</span>
       <span>阶段</span>
       <span>风险</span>
+      <span>风险分</span>
+      <span>等待</span>
+      <span>完整度</span>
       <span>负责人</span>
       <span>说明</span>
     </div>
     <div
-      v-for="row in rows"
-      :key="`${row.title}-${row.owner}`"
+      v-for="(row, index) in rows"
+      :key="row.id ?? `${row.title}-${row.owner}`"
       class="task-row"
     >
+      <span class="rank">#{{ index + 1 }}</span>
       <span>{{ row.title }}</span>
       <span>{{ row.stage }}</span>
       <span :class="['risk-tag', `risk-tag--${riskMeta(row.risk).tone}`]">
         {{ riskMeta(row.risk).label }}
       </span>
+      <span>{{ taskRiskScore(row, props.factors) }}</span>
+      <span>{{ formatWaitDays(row.waitDays) }}</span>
+      <span :class="{ 'is-missing': row.completeness == null }">
+        {{ formatCompleteness(row.completeness) }}
+      </span>
       <span>{{ row.owner }}</span>
       <span>{{ row.note }}</span>
+    </div>
+    <div v-if="rows.length === 0" class="task-empty">
+      当前查看条件下没有匹配的任务，请调整风险等级筛选或搜索关键词。
     </div>
   </div>
 </template>
@@ -43,7 +70,9 @@ defineProps({
 
 .task-row {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.6fr 0.7fr 1.3fr;
+  grid-template-columns:
+    0.45fr 1.05fr 0.65fr 0.5fr 0.5fr 0.5fr
+    0.6fr 0.55fr 1.2fr;
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
@@ -60,6 +89,16 @@ defineProps({
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.76rem;
+}
+
+.rank {
+  color: #8a7556;
+  font-variant-numeric: tabular-nums;
+}
+
+.is-missing {
+  color: #913d2f;
+  font-style: italic;
 }
 
 .risk-tag {
@@ -85,13 +124,20 @@ defineProps({
   color: #366338;
 }
 
+.task-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #8a7556;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 @media (max-width: 900px) {
   .task-table {
     overflow-x: auto;
   }
 
   .task-row {
-    min-width: 780px;
+    min-width: 980px;
   }
 }
 </style>

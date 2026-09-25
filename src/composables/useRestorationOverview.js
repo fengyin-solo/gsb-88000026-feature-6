@@ -5,14 +5,17 @@ import {
   restorationEnvironment,
   restorationTasks,
 } from '../data/restorationData'
+import { summarizeRiskLevels } from '../utils/taskRiskOrdering'
 
 export function useRestorationOverview() {
   const batchCount = computed(() => restorationBatches.length)
   const highRiskCount = computed(
-    () => restorationTasks.filter((item) => item.risk === 'high').length,
+    () => summarizeRiskLevels(restorationTasks).high,
   )
   const environmentCount = computed(() => restorationEnvironment.length)
-  const ownerCount = computed(() => new Set(restorationTasks.map((item) => item.owner)).size)
+  const ownerCount = computed(
+    () => new Set(restorationTasks.map((item) => item.owner)).size,
+  )
 
   return {
     batchCount,

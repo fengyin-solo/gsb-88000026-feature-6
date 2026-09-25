@@ -1,9 +1,13 @@
 <script setup>
+import { RouterLink } from 'vue-router'
+
 import PanelSection from '../components/common/PanelSection.vue'
 import StatCard from '../components/common/StatCard.vue'
 import BatchGrid from '../components/restoration/BatchGrid.vue'
 import EnvironmentCards from '../components/restoration/EnvironmentCards.vue'
 import HeroBanner from '../components/restoration/HeroBanner.vue'
+import RiskOrderSummary from '../components/restoration/RiskOrderSummary.vue'
+import TaskTable from '../components/restoration/TaskTable.vue'
 import {
   restorationBatches,
   restorationEnvironment,
@@ -11,13 +15,22 @@ import {
   restorationSteps,
 } from '../data/restorationData'
 import { useRestorationOverview } from '../composables/useRestorationOverview'
+import { useTaskRiskBoard } from '../composables/useTaskRiskBoard'
 
-const { batchCount, environmentCount, highRiskCount, ownerCount } =
+const { batchCount, environmentCount, ownerCount } =
   useRestorationOverview()
+const {
+  state,
+  factors,
+  visibleTasks,
+  visibleStats,
+  orderingDescription,
+  hasActiveFilters,
+} = useTaskRiskBoard()
 
 const statCards = [
   { label: '在册批次', value: batchCount.value },
-  { label: '高风险任务', value: highRiskCount.value },
+  { label: '高风险任务', value: visibleStats.value.high },
   { label: '环境指标', value: environmentCount.value },
   { label: '参与修复师', value: ownerCount.value },
 ]
@@ -47,6 +60,21 @@ const statCards = [
         </ol>
       </PanelSection>
     </section>
+
+    <PanelSection title="任务风险顺序" badge="与任务清单同源">
+      <RiskOrderSummary
+        :description="orderingDescription"
+        :stats="visibleStats"
+      />
+      <TaskTable :rows="visibleTasks" :factors="factors" />
+      <footer class="risk-foot">
+        <span v-if="hasActiveFilters">
+          已沿用任务清单的查看条件（风险等级：{{ state.riskLevel === 'all' ? '全部' : state.riskLevel }}，共 {{ visibleStats.total }} 条）。
+        </span>
+        <span v-else>当前展示全量任务；筛选与排序因子在任务清单页调整后，此处同步生效。</span>
+        <RouterLink class="more-link" to="/tasks">进入任务清单调整查看条件 →</RouterLink>
+      </footer>
+    </PanelSection>
 
     <PanelSection title="环境参数" badge="修复室 2">
       <EnvironmentCards :items="restorationEnvironment" />
@@ -80,6 +108,28 @@ const statCards = [
 
 .step-list li + li {
   margin-top: 12px;
+}
+
+.risk-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 14px;
+  font-size: 0.8rem;
+  color: #8a7556;
+}
+
+.more-link {
+  color: #7e6038;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.more-link:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 980px) {
